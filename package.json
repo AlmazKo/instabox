@@ -1,0 +1,25 @@
+{
+  "name": "instabox",
+  "version": "0.0.1",
+  "description": "Instant preview extension",
+  "keywords": ["chrome-extension"],
+  "author": "Almazko",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlmazKo/instabox"
+  },
+  "dependencies": {
+    "@types/chrome": "0.0.55"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^4.1.1",
+    "ts-loader": "^3.0.3",
+    "typescript": "^2.6.1",
+    "webpack": "^3.8.1"
+  },
+  "scripts": {
+    "watch": "webpack --watch",
+    "build": "webpack"
+  }
+}
