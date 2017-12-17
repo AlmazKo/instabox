@@ -1,16 +1,21 @@
-function ajax(method: string, url: string, callback: (data: any) => void, err: (data: string) => void) {
-  const req = new XMLHttpRequest();
-  req.open(method, url);
-  req.setRequestHeader('Content-Type', 'application/json');
-  req.onreadystatechange = () => req.readyState === 4 ? (req.status === 200 ? callback(JSON.parse(req.responseText)) : err(url + ': request failed')) : 0;
-  req.send();
-}
+import { WikiData } from "./WikiData";
+import { request } from './data';
+
+let currentAnchor: HTMLAnchorElement | undefined;
+let currentPopup: HTMLElement | undefined;
+const currentUrl = window.location.href.split('#')[0];
 
 function anchors(): HTMLAnchorElement[] {
   return [...document.getElementsByTagName('a')as any];
 }
 
-function createPopup(data: any, x: number, y: number): HTMLElement {
+function wikiAnchors(): HTMLAnchorElement[] {
+  return anchors().filter(a => {
+    return /wikipedia.org\//.test(a.href) && currentUrl !== a.href.split('#')[0];
+  })
+}
+
+function createPopup(data: WikiData, x: number, y: number): HTMLElement {
   const container = document.createElement('div');
   const popup     = document.createElement('ipopup');
 
@@ -32,37 +37,37 @@ function createPopup(data: any, x: number, y: number): HTMLElement {
   return container;
 }
 
+function load(a: HTMLAnchorElement): Promise<WikiData> {
+  const url = a.href.replace('/wiki/', '/api/rest_v1/page/summary/');
+  return request(url);
+}
+
+function deletePopup() {
+  if (currentPopup) {
+    currentPopup.parentElement!.removeChild(currentPopup);
+    currentPopup = undefined;
+  }
+}
+
 function run() {
-  console.error('sas2');
 
-  let p: HTMLElement | undefined;
-
-  anchors().forEach(a => {
-    if (!/wikipedia.org\//.test(a.href)) return;
-
+  wikiAnchors().forEach(a => {
     (a.style as any)['text-decoration-style'] = 'dotted';
     a.style.textDecoration                    = 'underline';
 
     a.addEventListener('mouseenter', () => {
-
-      if (p) {
-        p.parentElement!.removeChild(p);
-        p = undefined;
-      }
-      //  console.log(a.getBoundingClientRect(), window.getComputedStyle(a, null!).getPropertyValue('line-height'));
-      const restApi = a.href.replace('/wiki/', '/api/rest_v1/page/summary/');
-      ajax('GET', restApi, data => {
-          p = createPopup(data, a.offsetLeft, a.offsetTop + 20); //fixme
-          a.parentElement!.appendChild(p);
-        }, e => console.error(e)
-      );
+      currentAnchor = a;
+      deletePopup();
+      load(a).then(data => {
+        if (a !== currentAnchor) return;
+        currentPopup = createPopup(data, a.offsetLeft, a.offsetTop + 20); //fixme
+        a.parentElement!.appendChild(currentPopup);
+      });
     });
 
     a.addEventListener('mouseout', () => {
-      if (p) {
-        p.parentElement!.removeChild(p);
-        p = undefined;
-      }
+      deletePopup();
+      currentAnchor = undefined;
     });
 
   });
